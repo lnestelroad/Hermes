@@ -1,0 +1,12 @@
+{
+    "jupyter.jupyterServerType": "local",
+    "python.envFile": "${workspaceFolder}/.vscode/.env",
+    "python.analysis.extraPaths": [
+        "src"
+    ],
+    "[python]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.formatOnSave": true
+    },
+}
