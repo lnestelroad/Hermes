@@ -28,8 +28,6 @@ class Service(BaseNode):
         self.retries = 3
         self.time_last_heartbeat = time.time()
 
-        # TODO: Look for udp beacon broadcasts.
-
     def connect(self, reconnect=False):
         """
         Connects the service node to the broker. In the event that the service does not 
@@ -119,7 +117,7 @@ class Service(BaseNode):
                 self.update_config({'name': self.name, 'port': self.port})
 
             self.closer_socket("service->bus")
-            self.logger.info("Beginning Event Loop.")
+            self.logger.info("Beginning Event Loop...")
 
         elif msg.command == b'0x03':
             self.logger.critical(f"Registration Denied, {msg.body}")

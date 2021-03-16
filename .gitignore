@@ -2,3 +2,4 @@ src/__pycache__/
 src/logs/*
 .ipynb_checkpoints/
 .vscode/.env
+zeromq

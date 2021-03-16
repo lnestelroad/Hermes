@@ -10,6 +10,7 @@ import typing
 # Third party modules
 import zmq
 from DBP import Protocols
+from Beacon import Beacon
 
 
 class BaseNode():
@@ -56,10 +57,6 @@ class BaseNode():
 
         # self.ctx.setsockopt(zmq.CONNECT_TIMEOUT, 1000)
 
-        if not broker:
-            self.sockets["discovery"] = self.ctx.socket(zmq.SUB)
-            self.sockets["discovery"].subscribe("BEACON")
-
         self.logger = logging.getLogger(name)
 
         # TODO: Put this in config file
@@ -84,6 +81,13 @@ class BaseNode():
         # Add handlers to the logger
         self.logger.addHandler(c_handler)
         self.logger.addHandler(f_handler)
+
+        if not broker:
+            # Search and connect to broker
+            self.beacon = Beacon()
+            self.logger.info("Searching for beacon message from Broker...")
+            self.broker_addr = self.beacon.recv()
+            self.logger.info("Broker found! Connecting to interface...")
 
     def new_socket(self, name, type=zmq.PAIR, addr=None, soc_options=None):
         """
@@ -139,7 +143,7 @@ class BaseNode():
             # TODO: Make this better
             raise BaseException("Must provide better parameters")
 
-        self.poller.register(self.sockets[name])
+        self.poller.register(self.sockets[name], flags=zmq.POLLIN)
         # TODO: ITERATE THROUGH SOCKET OPTIONS PARAMETER
 
     def closer_socket(self, name: str):

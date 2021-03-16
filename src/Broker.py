@@ -13,6 +13,7 @@ import zmq
 # Relative imports
 from BaseClasses import BaseNode
 from Message import Message
+from Beacon import Beacon
 
 
 class Broker(BaseNode):
@@ -66,6 +67,7 @@ class Broker(BaseNode):
         self.services = dict()
 
         self.new_socket("interface", zmq.ROUTER)
+        self.beacon = Beacon()
 
         # TODO: Add internal services
         # self.new_socket("LCVS", zmq.SUB)
@@ -78,13 +80,18 @@ class Broker(BaseNode):
         polled and incoming message will be passed along to its respective callback function.
         A message with a body of "Exit" will cause the loop to terminate stop the broker.
         """
-        self.logger.info("Beginning Event Loop.")
+        self.logger.info("Beginning Event Loop...")
         while self.continue_loop:
 
+            # Sends out a beacon message for discovery
+            self.beacon.send()
+            # self.logger.debug("Sent UDP message.")
+
             # Returns a dictionary of events to be processed
-            events = dict(self.poller.poll())
+            events = dict(self.poller.poll(timeout=1000))
 
             if self.sockets["interface"] in events:
+
                 msg = Message(socket=self.sockets["interface"])
                 msg.recv()
                 self.logger.info(f"Message received on Interface")
@@ -109,7 +116,7 @@ class Broker(BaseNode):
 
                     elif msg.command == b'0x07':
                         self.logger.debug(
-                            f"Passing Message to Service Config Update Hanler.")
+                            f"Passing Message to Service Config Update Handler.")
                         self.service_update(msg)
 
                     else:
@@ -122,6 +129,8 @@ class Broker(BaseNode):
 
                 else:
                     msg.send(body="Error: Unrecognized Request.")
+
+    # TODO: Implement as thread pool to take over tasks and free up eventloop
 
     def client_handler(self, msg: Message):
         """
@@ -141,6 +150,7 @@ class Broker(BaseNode):
         else:
             msg.send(body=self.services)
 
+    # TODO: Implement as thread pool to take over tasks and free up eventloop
     def service_registration(self, msg: Message):
         """
         Handles registration messages that come in from services. 

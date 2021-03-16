@@ -12,6 +12,7 @@ import zmq
 # Relative imports
 from BaseClasses import BaseNode
 from Message import Message
+from Beacon import Beacon
 
 
 class Client(BaseNode):
@@ -24,8 +25,6 @@ class Client(BaseNode):
 
         # open a socket to the broker
         self.new_socket("client->bus", zmq.REQ)
-
-        # TODO: Look for udp beacon broadcasts.
 
     def get_services(self, name=None):
         """
