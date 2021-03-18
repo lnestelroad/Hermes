@@ -88,9 +88,7 @@ class Broker(BaseNode):
 
             # Sends out a beacon message for discovery
             self.logger.debug("Sending UDP broadcast...")
-            self.beacon.send()
-
-            # Sends heartbeats if time
+            self.beacon.broadcast()
 
             # Returns a dictionary of events to be processed
             events = dict(self.poller.poll(timeout=1000))

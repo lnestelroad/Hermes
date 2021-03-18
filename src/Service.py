@@ -4,7 +4,7 @@
 import os
 import time
 import logging
-from typing import Protocol
+from typing import Dict, List, Any
 
 # Third party modules
 import zmq
@@ -12,6 +12,7 @@ import zmq
 # Relative imports
 from BaseClasses import BaseNode
 from Message import Message
+from Timer import Heartbeater
 
 
 class Service(BaseNode):
@@ -24,9 +25,7 @@ class Service(BaseNode):
         self.continue_loop = False
 
         # Heartbeat stuff
-        self.liveliness = 1000
-        self.retries = 3
-        self.time_last_heartbeat = time.time()
+        self.heart = Heartbeater()
 
     def connect(self, reconnect=False):
         """
@@ -98,8 +97,9 @@ class Service(BaseNode):
             "ip_addr":    self.ip,
             "port":       self.port,
             "last_beat":  time.asctime(),
-            "liveliness": self.liveliness,
-            "retry":      self.retries,
+            # TODO: Fix heartbeat stuff here
+            # "liveliness": self.liveliness,
+            # "retry":      self.retries,
             "topics":     None
         }
 

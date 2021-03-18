@@ -39,12 +39,13 @@ class Beacon():
     address = ''    # Own address
     broadcast_addr = ''  # Broadcast address
 
-    def __init__(self, heartbeater: Heartbeater, port=5246, address=None, broadcast_addr='255.255.255.255'):
+    def __init__(self, port=5246, address=None, broadcast_addr='255.255.255.255'):
         if address is None:
             # TODO: Make finding the actuall IP address more robust than guessing where it is.
             local_addrs = ni.ifaddresses(ni.interfaces()[2])[2][0]['addr']
 
-        self.heartbeater = heartbeater
+        # self.heartbeater = heartbeater
+        # self.logger = logger
         self.address = local_addrs
         self.broadcast_addr = broadcast_addr
         self.port = port
@@ -57,13 +58,21 @@ class Beacon():
         self.sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 
+        self.recver = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self.recver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.recver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
+        # Bind UDP socket to local port so we can receive pings
+        self.recver.bind(('', self.port))
+
     def broadcast(self):
         """
         Sends a default discovery message with the address, port, and timestamp of current machine
         """
         msg = b'GONDOR_CALLS_FOR_AID'
         # TODO: Send with multicast...not broadcast.
-        self.sender.sendto(msg, (self.broadcast, self.port))
+        self.sender.sendto(msg, (self.broadcast_addr, self.port))
 
     def recv(self, n=1024):
         """
@@ -78,24 +87,12 @@ class Beacon():
         -------
         dict of discovery information from the broadcast origin.
         """
-
-        # Note: Socket needs to be rebuild otherwise old broadcasts queue up.
-        # This way ensures when you call recv you're getting the newest broadcast message.
-        self.recver = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        self.recver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.recver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-
-        # Bind UDP socket to local port so we can receive pings
-        self.recver.bind(('', self.port))
-
         # TODO: Add timeouts incase there is no broker up and running
         header, addr = self.recver.recvfrom(n)
 
         if header == b'GONDOR_CALLS_FOR_AID':
             print("Received beacon message...")
 
-        self.recver.close()
         return addr
 
 
