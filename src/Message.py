@@ -10,6 +10,8 @@ import typing
 import zmq
 from DBP import Protocols
 
+# NOTE: This is an example of including zeromq sockets within the wrapper as opposed to how Heartbeats deal with events.
+
 
 class Message():
     """

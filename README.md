@@ -1,19 +1,14 @@
-# Decentralized ZeroMQ Broker Proof of Concept
+# Hermes
 
 
-<img src="images/IMG_6857.jpg" style="display: block;
+<!-- <img src="images/IMG_6857.jpg" style="display: block;
   margin-left: auto;
   margin-right: auto;
-  width: 50%;">  
+  width: 50%;">   -->
 
 + Status: draft
-+ Editor: Liam Nestelroad liam.nestelroad@lasp.colorado.edu
++ Editor: Liam Nestelroad liam.nestelroad@colorado.edu
 + Contributors:
-
-## Overview
----
-
-The Message bus for LASP's new messaging infrastructure is currently at a cross road in terms of the implementation plan: a decentralized vs. centralized broking system. This repo will serve as the Proof of concept for a decentralized system built with Python3 and the PyZMQ module. Later commits may include a centralized version as well for side by side comparison. 
 
 ## Summary
 ---

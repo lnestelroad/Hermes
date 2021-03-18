@@ -5,6 +5,7 @@ import os
 import time
 import json
 import logging
+from typing import Dict, List, Type, Any
 
 
 # Third party modules
@@ -14,6 +15,7 @@ import zmq
 from BaseClasses import BaseNode
 from Message import Message
 from Beacon import Beacon
+from Timer import Heartbeater
 
 
 class Broker(BaseNode):
@@ -31,16 +33,16 @@ class Broker(BaseNode):
         The interval in which to expect/send heartbeats from/to services.
     retries : int
         The number of attempts to try and reconnect to a service that has not sent a heartbeat.
-    services : dict(name: information)
+    services : Dict[str: Dict[str, Any]]
         Holds all of the currently registered services information. The information is another dictionary
         of the following form:
         {
             ip_addr:    str,
             port:       int,
             last_beat:  time,
-            liveliness: msec,
+            liveliness: int,
             retry:      int
-            topics:     list[]
+            topics:     List[]
         }
 
     Methods
@@ -51,22 +53,23 @@ class Broker(BaseNode):
         Terminate the eventloop and closes the context.
     """
 
-    def __init__(self, name="Amon Din", log_level=logging.WARNING, liveliness=1000, retries=3):
+    def __init__(self, name="Amon Din", log_level=logging.WARNING, liveliness=1000):
         super().__init__(broker=True, ip="*", name=name, log_level=log_level)
         self.continue_loop = True
+
+        # Sets up interface sockets
+        self.new_socket("interface", zmq.ROUTER)
 
         # Only displays if the user sets the log level to debug for verbose mode.
         self.logger.debug("Verbose")
 
         # Heartbeat stuff
-        self.liveliness = 1000
-        self.retries = 3
-        self.time_last_heartbeat = time.time()
+        self.heart = Heartbeater(liveliness)
 
         # Service registration storage
         self.services = dict()
 
-        self.new_socket("interface", zmq.ROUTER)
+        # Beaconing Service
         self.beacon = Beacon()
 
         # TODO: Add internal services
@@ -84,8 +87,10 @@ class Broker(BaseNode):
         while self.continue_loop:
 
             # Sends out a beacon message for discovery
+            self.logger.debug("Sending UDP broadcast...")
             self.beacon.send()
-            # self.logger.debug("Sent UDP message.")
+
+            # Sends heartbeats if time
 
             # Returns a dictionary of events to be processed
             events = dict(self.poller.poll(timeout=1000))

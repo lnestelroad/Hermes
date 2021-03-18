@@ -7,6 +7,15 @@ from pprint import pprint
 # Third party modules
 import netifaces as ni
 
+from Timer import Heartbeater
+
+################################################# RESOURCES ##########################################################
+# Basic UDP broadcast: https://gist.github.com/ninedraft/7c47282f8b53ac015c1e326fffb664b5
+# Multicast examples: https://stackoverflow.com/questions/603852/how-do-you-udp-multicast-in-python
+# Sockets documentation: https://docs.python.org/3/library/socket.html
+# Getting IP address in python: https://stackoverflow.com/questions/24196932/how-can-i-get-the-ip-address-from-nic-in-python
+#######################################################################################################################
+
 
 class Beacon():
     """
@@ -28,15 +37,16 @@ class Beacon():
     """
     port = 0        # UDP port we work on
     address = ''    # Own address
-    broadcast = ''  # Broadcast address
+    broadcast_addr = ''  # Broadcast address
 
-    def __init__(self, port=5246, address=None, broadcast='255.255.255.255'):
+    def __init__(self, heartbeater: Heartbeater, port=5246, address=None, broadcast_addr='255.255.255.255'):
         if address is None:
             # TODO: Make finding the actuall IP address more robust than guessing where it is.
             local_addrs = ni.ifaddresses(ni.interfaces()[2])[2][0]['addr']
 
+        self.heartbeater = heartbeater
         self.address = local_addrs
-        self.broadcast = broadcast
+        self.broadcast_addr = broadcast_addr
         self.port = port
 
         # Create UDP sockets
@@ -47,7 +57,7 @@ class Beacon():
         self.sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 
-    def send(self):
+    def broadcast(self):
         """
         Sends a default discovery message with the address, port, and timestamp of current machine
         """
