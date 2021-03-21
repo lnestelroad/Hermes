@@ -74,6 +74,9 @@ class Beacon():
         # TODO: Send with multicast...not broadcast.
         self.sender.sendto(msg, (self.broadcast_addr, self.port))
 
+    def heartbeat(self, addr, port, name):
+        self.sender.sendto(bytes(name, 'utf-8'), (addr, port))
+
     def recv(self, n=1024):
         """
         Makes a new receiving UPD socket and receives all new broadcasted messages on the class port.
@@ -92,6 +95,10 @@ class Beacon():
 
         if header == b'GONDOR_CALLS_FOR_AID':
             print("Received beacon message...")
+
+        elif b'<3' in header:
+            name = header.decode('utf-8').split(' ')[0]
+            return name
 
         return addr
 

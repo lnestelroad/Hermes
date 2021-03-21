@@ -11,6 +11,7 @@ import typing
 import zmq
 from DBP import Protocols
 from Beacon import Beacon
+from Logger import Logger
 
 
 class BaseNode():
@@ -52,42 +53,18 @@ class BaseNode():
         self.update = False
 
         self.ctx = zmq.Context()
-        self.sockets = dict()
         self.poller = zmq.Poller()
+        self.sockets = dict()
 
-        # self.ctx.setsockopt(zmq.CONNECT_TIMEOUT, 1000)
+        # Initialize logging component
+        self.logger = Logger(name, log_level).logger
 
-        self.logger = logging.getLogger(name)
-
-        # TODO: Put this in config file
-
-        # Create handlers
-        c_handler = logging.StreamHandler()
-        f_handler = logging.FileHandler(f'logs/{name}.log')
-
-        # https://stackoverflow.com/questions/38182177/python-logging-info-debug-logs-not-displayed
-        self.logger.setLevel(log_level)
-        c_handler.setLevel(log_level)
-        f_handler.setLevel(logging.WARNING)
-
-        # Create formatters and add it to handlers
-        c_format = logging.Formatter('[%(name)s] %(levelname)s - %(message)s')
-        f_format = logging.Formatter(
-            '%(asctime)s - [%(name)s] %(levelname)s - %(message)s')
-
-        c_handler.setFormatter(c_format)
-        f_handler.setFormatter(f_format)
-
-        # Add handlers to the logger
-        self.logger.addHandler(c_handler)
-        self.logger.addHandler(f_handler)
-
-        if not broker:
-            # Search and connect to broker
-            self.beacon = Beacon()
-            self.logger.info("Searching for beacon message from Broker...")
-            self.broker_addr = self.beacon.recv()
-            self.logger.info("Broker found! Connecting to interface...")
+        # Create a beacon
+        self.beacon = Beacon()
+        self.poller.register(self.beacon.recver, flags=zmq.POLLIN)
+        # self.logger.info("Searching for beacon message from Broker...")
+        # self.broker_addr = self.beacon.recv()
+        # self.logger.info("Broker found! Connecting to interface...")
 
     def new_socket(self, name, type=zmq.PAIR, addr=None, soc_options=None):
         """

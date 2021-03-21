@@ -8,7 +8,7 @@ import typing
 
 # Third party modules
 import zmq
-from DBP import Protocols
+import DBP
 
 # NOTE: This is an example of including zeromq sockets within the wrapper as opposed to how Heartbeats deal with events.
 

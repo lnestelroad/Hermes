@@ -4,7 +4,9 @@
 import os
 import time
 import logging
-from typing import Dict, List, Any
+import uuid
+from typing import Dict, List, Any, Callable
+from concurrent.futures import ThreadPoolExecutor
 
 # Third party modules
 import zmq
@@ -12,20 +14,13 @@ import zmq
 # Relative imports
 from BaseClasses import BaseNode
 from Message import Message
-from Timer import Heartbeater
+from Timer import Heartbeater, Peer
+from Beacon import Beacon
 
 
-class Service(BaseNode):
-    """
-    A LIAMb node extension to provide a service interface with the bus.
-    """
-
-    def __init__(self, name="Rohan", liveliness=1000, retries=3):
-        super().__init__(name=name, log_level=logging.DEBUG)
-        self.continue_loop = False
-
-        # Heartbeat stuff
-        self.heart = Heartbeater()
+class Service(Reactor):
+    def __init__(self):
+        pass
 
     def connect(self, reconnect=False):
         """

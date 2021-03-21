@@ -111,6 +111,7 @@ class Heartbeater():
         for peer_name, peer_obj in self.tabs.items():
             if peer_obj.is_time():
                 self.tardy.append(peer_name)
+                self.send_time = True
 
         return self.send_time
 
