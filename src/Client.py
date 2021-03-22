@@ -10,12 +10,12 @@ from typing import get_args
 import zmq
 
 # Relative imports
-from BaseClasses import BaseNode
+from Node import Node
 from Message import Message
 from Beacon import Beacon
 
 
-class Client(BaseNode):
+class Client(Node):
     """
     A LIAMb node extension to provide a client interface with the bus.
     """
@@ -36,7 +36,7 @@ class Client(BaseNode):
             A name of a desired service to get information about. If left blank then all services 
             will be returned
         """
-        msg = Message(protocol='DBPCCC01', socket=self.sockets["client->bus"])
+        msg = Message(socket=self.sockets["client->bus"])
         msg.send(name)
         msg.recv()
         msg.display_envelope()
@@ -57,23 +57,30 @@ class Client(BaseNode):
         """
         An event loop for user interaction with the client API.
         """
-        service = input("Please enter a service to chat with: ")
-        self.get_services(name=service)
-        addr = input("Specify connection address:  ")
-        self.connect_to_service(addr)
+        # self.get_services()
+        addr = input("Specify connection port:  ")
+        self.connect_to_service(f'tcp://localhost:{addr}')
         msg = input("What would you like to say: ")
 
-        message = Message(protocol="DBPCCC01",
-                          socket=self.sockets["client->service"])
+        message = Message(
+            socket=self.sockets["client->service"], logger=self.logger)
         message.send(body=msg)
 
         print("Response from service:")
-        message.recv()
-        message.display_envelope()
+        message.recv(display=True)
 
 
 if __name__ == "__main__":
     print("Shalom, World!")
 
-    test = Client()
-    test.start()
+    ctx = zmq.Context()
+    # addr = input("Specify connection port:  ")
+    req = ctx.socket(zmq.REQ)
+    req.connect(f'tcp://localhost:5246')
+    msg = input("What would you like to say: ")
+
+    message = Message(socket=req)
+    message.send(command='<3', body=msg)
+
+    print("Response from service:")
+    message.recv(display=True)

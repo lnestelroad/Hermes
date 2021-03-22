@@ -107,14 +107,16 @@ A **_REQUEST_** command consists of a multipart message of 4 or more frames, for
 
     Frame 0: Empty (zero bytes, invisible to REQ application)
     Frame 1: 'u_U' (3 bytes for info request command)
-    Frame 2: Service(s) info request (printable string)
+    Frame 2: time (current epoch time)
+    Frame 3: Service(s) info request (printable string)
 
 A **_REPLY_** command consists of a multipart message of 5 or more frames, formatted on the wire as follows:
 
     Frame 0: Message Reply Address (from request message header)
     Frame 1: Empty (zero bytes, invisible to REQ application)
     Frame 2: 'o_O' (3 bytes for info retrieval response)
-    Frame 3: Information retrieval (serialized json object)
+    Frame 3: time (current epoch time)
+    Frame 4: Information retrieval (serialized json object)
 
 Clients SHOULD use a REQ socket when implementing a synchronous request-reply pattern. The REQ socket will silently create frame 0 for outgoing requests, and remove it for replies before passing them to the calling application. Clients MAY use a DEALER (XREQ) socket when implementing an asynchronous pattern. In that case the clients MUST create the empty frame 0 explicitly.
 
@@ -133,7 +135,8 @@ DBP/Service Registration is a strictly synchronous request-reply dialog, initiat
 A **_REGISTRATION_** request consists of a multipart message of 4 frames, formatted on the wire as follows:
 
     Frame 0: Empty frame
-    Frame 2: 'UwU' (3 byte, representing REGISTRATION)
+    Frame 1: 'UwU' (3 byte, representing REGISTRATION)
+    Frame 2: time (current epoch time)
     Frame 3+: Service information (serialized json object)
 
 Service information shall consist of the services name, ip address, port, function, and heartbeat timing at a minimum.
@@ -142,19 +145,22 @@ An **_UPDATE_** request consists of a multipart message of 4 frames, formatted o
 
     Frame 0: Empty frame
     Frame 1: 'UoU' (3 byte, representing config update)
-    Frame 2+: Updated values (serialized json object)
+    Frame 2: time (current epoch time)
+    Frame 3+: Updated values (serialized json object)
 
 An **_APPROVED_** reply consists of a multipart message of 6 or more frames, formatted on the wire as follows:
 
     Frame 0: Empty frame
     Frame 1: 'OwO' (3 byte, representing APPROVED)
-    Frame 2+: Optional configuration changes 
+    Frame 2: time (current epoch time)
+    Frame 3+: Optional configuration changes 
 
 An **_DENIED_** reply consists of a multipart message of 3 or more frames for unauthorized or unregistered services, formatted on the wire as follows:
 
     Frame 0: Empty frame
     Frame 1: '(O_O)' (one byte, representing DENIED)
-    Frame 2+: Reasons for denial
+    Frame 2: time (current epoch time)
+    Frame 3+: Reasons for denial
 
 **DBP/Heartbeats**
 DBP/Heartbeats are a zmq independent messaging schema that uses raw UDP sockets to broadcast from the broker node and send one off's from the services top the broker. In the event of a missing beat, heartbeats will switch over to reliable TCP connections via req/rep zmq sockets.
@@ -172,17 +178,20 @@ A **_HEARTBEAT_** message consists of a multipart message of 3 frames, formatted
 
     Frame 0: Empty frame
     Frame 1: '<3' (two bytes, representing HEARTBEAT)
-    Frame 2: Service name.
+    Frame 2: time (current epoch time)
+    Frame 3: Service name.
 
 A **_DISCONNECT_** command consists of a multipart message of 3 frames, formatted on the wire as follows:
 
     Frame 0: Empty frame
-    Frame 2: '</3' (3 byte, representing DISCONNECT)
+    Frame 1: '</3' (3 byte, representing DISCONNECT)
+    Frame 2: time (current epoch time)
 
 An **AWK** command consists of a multipart message of 3 frames, formatted on the wire as follows:
 
     Frame 0: Empty frame
-    Frame 2: 'u.u' (3 byte, representing DISCONNECT)
+    Frame 1: 'u.u' (3 byte, representing DISCONNECT)
+    Frame 2: time (current epoch time)
 
 DBP/Service commands all start with an empty frame to allow consistent processing of client and Service frames in a broker, over a single socket. The empty frame has no other significance.
 

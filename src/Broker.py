@@ -12,13 +12,13 @@ from typing import Dict, List, Type, Any
 import zmq
 
 # Relative imports
-from BaseClasses import BaseNode
+from Node import Node
 from Message import Message
 from Beacon import Beacon
 from Timer import Heartbeater
 
 
-class Broker(BaseNode):
+class Broker():
     """
     A LIAMb pseudo-distributed broker protocol implementation instance. Contains a public interface,
     distributive node monitor, beacon, log aggregator, network proxy, and last cache value.

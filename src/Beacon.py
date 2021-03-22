@@ -1,8 +1,6 @@
 # System modules
-import json
 import time
 import socket
-from pprint import pprint
 
 # Third party modules
 import netifaces as ni
