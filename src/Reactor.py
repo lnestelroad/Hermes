@@ -12,7 +12,7 @@ import zmq
 # Relative imports
 from Node import Node
 from Message import Message
-from DBP import commands
+from DBP import commands, command_checks
 
 
 class Reactor(Node):
@@ -21,64 +21,87 @@ class Reactor(Node):
     method for users to define new message and callbacks pairs.
     """
 
-    def __init__(self, name=uuid4().hex, pipe: zmq.Socket = None):
-        super().__init__(name=name, log_level=logging.DEBUG)
+    def __init__(self, name=uuid4().hex, log_level=logging.WARN, pipe: zmq.Socket = None):
+        super().__init__(name=name, log_level=log_level)
 
         self.continue_loop: bool = True
 
+        # Caches the standard commands into object
         self.standard_commands: Dict[str, bytes] = commands
 
         # Sets up interface sockets
         self.new_socket("interface", zmq.ROUTER)
 
-        # Registers the pipe socket if one is passed.
-        if pipe is not None:
+        # Registers a new pipe
+        if pipe:
             self.new_pipe(pipe)
 
         # Holds the functions for message handlers.
         # TODO: Add wild card options for commands
         self.msg_handlers: Dict[str, Callable[..., Message]] = {}
 
-    def start(self):
-        self.logger.info("Beginning Event Loop...")
+    def start(self, display_incoming=False):
+        """
+        Begins the eventloop, polls on each registered socket, and passes incoming 
+        messages off to a child thread.
+        """
         self.add_msg_handler(commands['Exit'], self.stop)
+        self.logger.info("Beginning Reactor...")
 
         with ThreadPoolExecutor(max_workers=100) as executor:
             while self.continue_loop:
 
                 ####################### Incoming Message ####################
-                events = dict(self.poller.poll(timeout=1000))
+                events = dict(self.poller.poll())
 
                 # Checks to see if there are events on any created sockets.
                 for soc_name, soc_obj in self.sockets.items():
                     if soc_obj in events:
                         self.logger.info(f"Message on {soc_name}.")
                         msg = Message(self.sockets[soc_name], self.logger)
-                        msg.recv(display=True)
+                        msg.recv(display=display_incoming)
 
-                        try:
+                        if msg.command in self.msg_handlers.keys():
                             self.logger.debug("Passing msg to thread.")
                             executor.submit(
                                 self.msg_handlers[msg.command], msg)
-                        except:
+                        else:
                             # TODO: Add message command for making new command registrations
                             self.logger.debug(
                                 f"No message handler with command {msg.command}.")
                             msg.send(
                                 "Error: Invalid command type. Please register command callback with the server.")
 
-    def add_msg_handler(self, command: str, closure: Callable[..., Message]):
-        if command not in self.standard_commands.keys():
-            self.logger.info(
-                "New Command is not apart of the standard list. Adding custom command")
+    def add_msg_handler(self, command: bytes, closure: Callable[..., Message]):
+        """
+        Adds a new message handler function to the list of callback. Messages
+        with the command associated with the passed in function will be executed
+        upon arrival in a child thread.
+
+        Parameters
+        ----------
+        command: bytes
+            A command for which to associate a callback function with.
+        closure : Callable[..., Message]
+            A function which takes a Message as its parameter to handle specific messages.
+        """
+
+        # if command not in self.standard_commands.values():
+        #     self.logger.info(
+        #         "New Command is not apart of the standard list. Adding custom command")
 
         if command not in self.msg_handlers.keys():
             self.msg_handlers[command] = closure
-            self.logger.info("Registered new handler.")
+            self.logger.info(
+                f"Registered new handler: {command_checks[command]}.")
         else:
             print("Command already exists.")
 
     def stop(self, msg: Message):
+        """
+        A special callback function to end the reactors main loop when certain messages
+        come in.TODO: Authorize these types of messages.
+        """
         self.logger.warning(
             "Received exit command, client will stop receiving messages")
         msg.send("Bye!")

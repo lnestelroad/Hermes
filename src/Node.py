@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 
 # System modules
-import json
-import os
-import time
 import logging
 import typing
 from uuid import uuid4
 
 # Third party modules
 import zmq
-from Beacon import Beacon
+
+# Relative imports
 from Logger import Logger
+from zhelpers import zpipe
 
 
 class Node():
@@ -108,7 +107,7 @@ class Node():
 
         self.poller.register(self.sockets[name], flags=zmq.POLLIN)
 
-    def new_pipe(self, pipe: zmq.Socket):
+    def new_pipe(self, pipe: zmq.Socket, name='pipe'):
         """
         Registers a new pipe socket with the node.
 
@@ -117,8 +116,9 @@ class Node():
         pipe: zmq.Socket
             A PAIR sockets to be passed in from a parent thread.
         """
-        self.sockets['pipe'] = pipe
-        self.poller.register(self.sockets['pipe'], flags=zmq.POLLIN)
+
+        self.sockets[name] = pipe
+        self.poller.register(self.sockets[name], flags=zmq.POLLIN)
 
     def close_socket(self, name: str):
         """

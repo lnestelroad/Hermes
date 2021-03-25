@@ -25,5 +25,6 @@ command_checks = {
     b'u.u': 'Acknowledged',
     b'<3': 'Heartbeat',
     b'</3': 'Disconnect',
-    b'<\\3': 'Exit'
+    b'<\\3': 'Exit',
+    b'^o^': 'Handler'
 }

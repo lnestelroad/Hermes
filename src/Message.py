@@ -132,7 +132,6 @@ class Message():
             This is the message to append to the outgoing message attribute.
         """
 
-        # TODO: add support for pickle, ect type containers
         if type(body) == bytes:
             self.outgoing.append(body)
 

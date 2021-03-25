@@ -6,6 +6,7 @@ import time
 import json
 import logging
 from typing import Dict, List, Type, Any
+from concurrent.futures import ThreadPoolExecutor
 
 
 # Third party modules
@@ -16,9 +17,13 @@ from Node import Node
 from Message import Message
 from Beacon import Beacon
 from Timer import Heartbeater
+from Logger import Logger
+from Reactor import Reactor
+from zhelpers import zpipe
+from DBP import commands
 
 
-class Broker():
+class Broker(Node):
     """
     A LIAMb pseudo-distributed broker protocol implementation instance. Contains a public interface,
     distributive node monitor, beacon, log aggregator, network proxy, and last cache value.
@@ -53,87 +58,35 @@ class Broker():
         Terminate the eventloop and closes the context.
     """
 
-    def __init__(self, name="Amon Din", log_level=logging.WARNING, liveliness=1000):
-        super().__init__(broker=True, ip="*", name=name, log_level=log_level)
+    def __init__(self, name="Amon_Din", log_level=logging.WARNING, liveliness=1000):
+        super().__init__(name, log_level)
         self.continue_loop = True
 
-        # Sets up interface sockets
-        self.new_socket("interface", zmq.ROUTER)
+        # Pipes
+        pipe_beacon, pb = zpipe(self.ctx)
+        pipe_reactor, pr = zpipe(self.ctx)
+        pipe_heart, ph = zpipe(self.ctx)
 
-        # Only displays if the user sets the log level to debug for verbose mode.
-        self.logger.debug("Verbose")
+        self.new_pipe(pipe_beacon, name='pipe_beacon')
+        self.new_pipe(pipe_heart, name='pipe_heart')
 
-        # Heartbeat stuff
-        self.heart = Heartbeater(liveliness)
-
-        # Service registration storage
-        self.services = dict()
-
-        # Beaconing Service
+        # Internal Services
         self.beacon = Beacon()
+        self.interface = Reactor(name=f'{name}_interface', pipe=pr)
+        # self.heart = Heartbeater(liveliness, pipe=ph)
 
-        # TODO: Add internal services
-        # self.new_socket("LCVS", zmq.SUB)
-        # self.new_socket("NPS", zmq.PAIR)
-        # self.new_socket("DLAS", zmq.SUB)
+        # with ThreadPoolExecutor(100) as executor:
+        #     executor.submit()
 
-    def start(self):
-        """
-        Begins the event loop for the broker. Each currently registered socket will be
-        polled and incoming message will be passed along to its respective callback function.
-        A message with a body of "Exit" will cause the loop to terminate stop the broker.
-        """
-        self.logger.info("Beginning Event Loop...")
-        while self.continue_loop:
+        # Interface messages
+        self.add_msg_handler(commands['Info_Req'], self.client_handler)
+        self.add_msg_handler(
+            commands['Registration'], self.service_registration)
+        self.add_msg_handler(commands['Update'], self.service_update)
+        self.add_msg_handler(commands['Heartbeat'], self.heartbeats)
 
-            # Sends out a beacon message for discovery
-            self.logger.debug("Sending UDP broadcast...")
-            self.beacon.broadcast()
-
-            # Returns a dictionary of events to be processed
-            events = dict(self.poller.poll(timeout=1000))
-
-            if self.sockets["interface"] in events:
-
-                msg = Message(socket=self.sockets["interface"])
-                msg.recv()
-                self.logger.info(f"Message received on Interface")
-
-                if not msg.valid:
-                    self.logger.info(f"Dropping Invalid Message.")
-
-                elif msg.protocol == b"DBPCCC01":
-                    self.logger.debug(f"Passing Message to Client Handler")
-                    self.client_handler(msg)
-
-                elif msg.protocol == b'DBPCCS01':
-                    if msg.command == b'0x01':
-                        self.logger.debug(
-                            f"Passing Message to Service Handler")
-                        self.service_registration(msg)
-
-                    elif msg.command == b'<3':
-                        self.logger.debug(
-                            f"Passing Message to Heartbeat Handler")
-                        self.heartbeats()
-
-                    elif msg.command == b'0x07':
-                        self.logger.debug(
-                            f"Passing Message to Service Config Update Handler.")
-                        self.service_update(msg)
-
-                    else:
-                        self.logger.info("Invalid DBPCCS01 Message.")
-                        msg.send('0x03', "Error: Unrecognized Command.")
-
-                elif msg.body == [b"Exit"]:
-                    self.stop(msg)
-                    break
-
-                else:
-                    msg.send(body="Error: Unrecognized Request.")
-
-    # TODO: Implement as thread pool to take over tasks and free up eventloop
+        # External service registration storage
+        self.services = dict()
 
     def client_handler(self, msg: Message):
         """
@@ -144,16 +97,19 @@ class Broker():
         msg : BrokerMessage
             The passed along message received from the interface socket
         """
-        desired = bytes.decode(msg.body[0], 'utf-8')
-        if desired != '':
-            if desired in self.services:
-                msg.send(body=self.services[desired])
+        body = bytes.decode(msg.body[0], 'utf-8')
+        if body != '':
+            if body in self.services:
+                msg.send(command=commands['Info_Rep'],
+                         body=self.services[body])
             else:
-                msg.send(body=f"No Registered Service With the Name {desired}")
+                msg.send(
+                    command=commands['Info_Rep'],
+                    body=f"No Registered Service With the Name {body}")
         else:
-            msg.send(body=self.services)
+            msg.send(command=commands['Info_Rep'],
+                     body=self.services)
 
-    # TODO: Implement as thread pool to take over tasks and free up eventloop
     def service_registration(self, msg: Message):
         """
         Handles registration messages that come in from services. 
@@ -180,10 +136,10 @@ class Broker():
             self.logger.debug(
                 f"Service Registration Information\n:\t{self.services[name]}")
 
-            msg.send(command='0x02')
+            msg.send(command=commands['Approved'])
 
         else:
-            msg.send(command='0x03')
+            msg.send(command=commands['Denied'])
 
     def service_update(self, msg: Message):
         """
@@ -203,7 +159,7 @@ class Broker():
             self.services[name][k] = v
 
         self.logger.info(f"Service Configs Update: {info}")
-        msg.send(command='0x06')
+        msg.send(command=commands['Acknowledged'])
 
     def heartbeats(self, msg):
         """
@@ -216,19 +172,9 @@ class Broker():
         """
         pass
 
-    def stop(self, msg):
-        """
-        Ends the event loop
-        """
-        self.logger.warning(
-            "Received exit command, client will stop receiving messages")
-        msg.send("Bye!")
-        self.continue_loop = False
-        self.close_ctx()
-
 
 if __name__ == "__main__":
     print("Shalom, World!")
 
-    test = Broker(name="ProofOfConcept", log_level=logging.DEBUG)
+    test = Broker(log_level=logging.DEBUG)
     test.start()

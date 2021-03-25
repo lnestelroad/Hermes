@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
 
 # System modules
-import os
 import time
 import logging
-import uuid
 from typing import Dict, List, Any, Callable
-from concurrent.futures import ThreadPoolExecutor
 
 # Third party modules
 import zmq
 
 # Relative imports
-from BaseClasses import BaseNode
 from Message import Message
 from Timer import Heartbeater, Peer
 from Beacon import Beacon
+from Reactor import Reactor
+from DBP import commands, command_checks
 
 
 class Service(Reactor):
-    def __init__(self):
-        pass
+    def __init__(self, name="Rohan", log_level=logging.INFO):
+        super().__init__(name=name, log_level=log_level)
 
     def connect(self, reconnect=False):
         """
@@ -47,40 +45,6 @@ class Service(Reactor):
 
         # self.logger.critical(f"Broker Not Responding, Shutting Down.")
 
-    def start(self):
-        """
-        Begins the event loop for the service. Each currently registered socket will be 
-        polled and incoming message will be passed along to its respective callback function.
-        A message with a body of "Exit" will cause the loop to terminate stop the broker.
-        """
-        self.register()
-
-        while self.continue_loop:
-
-            # Returns a dictionary of events to be processed
-            events = dict(self.poller.poll())
-
-            if self.sockets["interface"] in events:
-                msg = Message(protocol='DBPCCS01',
-                              socket=self.sockets["interface"])
-                msg.recv()
-                msg.display_envelope()
-
-                self.logger.info(f"Message received on Interface")
-
-                if not msg.valid:
-                    self.logger.info(f"Dropping Invalid Message.")
-
-                elif msg.command == b'<3':
-                    self.heartbeats()
-
-                elif msg.body == [b"Exit"]:
-                    self.stop(msg)
-                    break
-
-                else:
-                    msg.send(body="Sup bro.", command='0x06')
-
     def register(self):
         """
         Sends a registration message as defined in the DBP.
@@ -98,11 +62,11 @@ class Service(Reactor):
             "topics":     None
         }
 
-        msg = Message(protocol='DBPCCS01', socket=self.sockets["service->bus"])
-        msg.send(command="0x01", body=info)
+        msg = Message(socket=self.sockets["service->bus"])
+        msg.send(command=commands['Registration'], body=info)
         msg.recv()
 
-        if msg.command == b'0x02':
+        if msg.command == commands["Approved"]:
             self.continue_loop = True
             self.logger.info("Registration Approved.")
             self.new_socket('interface', zmq.ROUTER)
@@ -111,10 +75,10 @@ class Service(Reactor):
             if self.update:
                 self.update_config({'name': self.name, 'port': self.port})
 
-            self.closer_socket("service->bus")
+            self.close_socket("service->bus")
             self.logger.info("Beginning Event Loop...")
 
-        elif msg.command == b'0x03':
+        elif msg.command == commands['Denied']:
             self.logger.critical(f"Registration Denied, {msg.body}")
             self.close_ctx()
 
@@ -127,25 +91,19 @@ class Service(Reactor):
         config : dict(config_option: new value)
             A dictionary which will hold the new values.
         """
-        msg = Message(protocol='DBPCCS01', socket=self.sockets["service->bus"])
-        msg.send(command="0x07", body=config)
+        msg = Message(socket=self.sockets["service->bus"])
+        msg.send(command=commands["Update"], body=config)
         msg.recv()
 
-        if msg.command == b'0x06':
+        if msg.command == commands['Acknowledged']:
             self.logger.info(f"New Config Value Updated!")
         else:
             self.connect(reconnect=True)
-
-    def stop(self, msg):
-        self.logger.warning(
-            "Received exit command, client will stop receiving messages")
-        msg.send("Bye!")
-        self.continue_loop = False
-        self.close_ctx()
 
 
 if __name__ == "__main__":
     print("Shalom, World!")
 
     test = Service()
+    test.register()
     test.start()

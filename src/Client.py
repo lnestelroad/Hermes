@@ -13,6 +13,7 @@ import zmq
 from Node import Node
 from Message import Message
 from Beacon import Beacon
+from DBP import commands
 
 
 class Client(Node):
@@ -63,7 +64,9 @@ class Client(Node):
         msg = input("What would you like to say: ")
 
         message = Message(
-            socket=self.sockets["client->service"], logger=self.logger)
+            command=commands['Info_Req'],
+            socket=self.sockets["client->service"],
+            logger=self.logger)
         message.send(body=msg)
 
         print("Response from service:")
@@ -74,13 +77,13 @@ if __name__ == "__main__":
     print("Shalom, World!")
 
     ctx = zmq.Context()
-    # addr = input("Specify connection port:  ")
+    addr = input("Specify connection port:  ")
     req = ctx.socket(zmq.REQ)
-    req.connect(f'tcp://localhost:5246')
+    req.connect(f'tcp://localhost:{addr}')
     msg = input("What would you like to say: ")
 
     message = Message(socket=req)
-    message.send(command='<3', body=msg)
+    message.send(command='u_U', body=msg, display=True)
 
     print("Response from service:")
     message.recv(display=True)
