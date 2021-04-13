@@ -1,9 +1,51 @@
 #!/usr/bin/env python3
 
 import time
-from typing import Dict, List
+from typing import Dict, KeysView, List
+from abc import ABC, abstractmethod
 
 # NOTE: These objects are examples of handeling events without including zeromq sockets as opposed to how the Message class does things.
+
+# https://stackoverflow.com/questions/52722864/python-periodic-timer-interrupt
+# https://github.com/sankalpjonn/timeloop/tree/d3e58dbe3b362d4f08077f570a8cda870875de65
+import sys
+import signal
+from threading import Timer
+from datetime import timedelta
+
+
+class ProgramKilled(Exception):
+    pass
+
+
+def signal_handler(signum, frame):
+    raise ProgramKilled
+
+
+class PeriodicEvent():
+    def __init__(self, interval, function, *args, **kwargs):
+        self._timer = None
+        self.interval = interval
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.is_running = False
+        self.start()
+
+    def _run(self):
+        self.is_running = False
+        self.start()
+        self.function(*self.args, **self.kwargs)
+
+    def start(self):
+        if not self.is_running:
+            self._timer = Timer(self.interval, self._run)
+            self._timer.start()
+            self.is_running = True
+
+    def stop(self):
+        self._timer.cancel()
+        self.is_running = False
 
 
 class Peer():
