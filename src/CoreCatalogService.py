@@ -6,20 +6,16 @@ import json
 import logging
 import socket
 from typing import Dict, List, Type, Any
-from datetime import timedelta
-
 
 # Third party modules
 import zmq
 
 # Relative imports
 from Message import Message
-from Beacon import Beacon
 from Timer import Heartbeater
-from Logger import Logger
 from Reactor import Reactor
-from zhelpers import zpipe
 from DBP import commands
+from Logger import Logger
 
 # %%
 
@@ -62,15 +58,16 @@ class CoreCatalogService():
     def __init__(self, name="CoreCatalogService", log_level=logging.WARNING, liveliness=1000):
 
         self.name = name
+        self.logger = Logger(self.name, log_level).logger
 
         #################################### Beacon Port #####################################
-        # Create UDP sockets
-        self.sender = socket.socket(
+        # Create UDP socket
+        self.beacon = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 
         # Ask operating system to let us do broadcasts from socket and resuse ports
-        self.sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.beacon.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.beacon.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         ######################################################################################
 
         # TODO: Pull socket, handler, and timer information from a config file
@@ -89,7 +86,7 @@ class CoreCatalogService():
                 'interval': 1,
                 'callback': self.broadcast,
                 'args': [],
-                'kwargs': {'port': 5555, 'broadcast_addr': '255.255.255.255'}
+                'kwargs': {'port': 5245, 'broadcast_addr': '255.255.255.255'}
             },
             'peer_check': {
                 'interval': .5,
@@ -99,7 +96,7 @@ class CoreCatalogService():
             }
         }
 
-        self.interface = Reactor(
+        self.loop = Reactor(
             name=f'{self.name}_interface',
             socs=sockets,
             msg_handlers=handlers,
@@ -154,10 +151,10 @@ class CoreCatalogService():
             del info["name"]
 
             self.services[name] = info
-            # self.logger.info(
-            #     f"New Service Registered: {name}")
-            # self.logger.debug(
-            #     f"Service Registration Information\n:\t{self.services[name]}")
+            self.logger.info(
+                f"New Service Registered: {name}")
+            self.logger.debug(
+                f"Service Registration Information\n:\t{self.services[name]}")
 
             msg.send(command=commands['Approved'])
 
@@ -181,27 +178,28 @@ class CoreCatalogService():
         for k, v in info.items():
             self.services[name][k] = v
 
-        # self.logger.info(f"Service Configs Update: {info}")
+        self.logger.info(f"Service Configs Update: {info}")
         msg.send(command=commands['Acknowledged'])
 
     def broadcast(self, port=5245, broadcast_addr=None):
 
-        msg = b'GONDOR_CALLS_FOR_AID'
+        msg = bytes(
+            f'SHALOM {self.loop.interfaces["router"]["port"]}', 'utf-8')
         # TODO: Send with multicast...not broadcast.
-        self.sender.sendto(msg, (broadcast_addr, port))
+        self.beacon.sendto(msg, (broadcast_addr, port))
 
     def robot_rollcall(self, *args, **kwargs):
         pass
 
     def start(self):
-        self.interface.start(display_incoming=True)
+        self.loop.start(display_incoming=True)
 
     def stop(self):
-        self.interface.stop()
+        self.loop.stop()
 
 
 # %%
 print("Shalom, World!")
 
-test = CoreCatalogService(log_level=logging.DEBUG)
+test = CoreCatalogService(log_level=logging.INFO)
 test.start()
