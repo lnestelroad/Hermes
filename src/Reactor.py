@@ -21,28 +21,26 @@ class Reactor(Node):
     method for users to define new message and callbacks pairs.
     """
 
-    def __init__(self, name=uuid4().hex, log_level=logging.WARN, pipe: zmq.Socket = None):
+    def __init__(self, socs: Dict[str, zmq.Socket], msg_handlers: Dict[bytes, Callable[..., Message]] = None, name=f'{uuid4().hex}_reactor', log_level=logging.WARN):
         super().__init__(name=name, log_level=log_level)
 
         self.continue_loop: bool = True
 
-        # Caches the standard commands into object
-        self.standard_commands: Dict[str, bytes] = commands
-
-        # Sets up interface sockets
-        self.new_socket("interface", zmq.ROUTER)
-
-        # Registers a new pipe
-        if pipe:
-            self.new_pipe(pipe)
-
         # Holds the functions for message handlers.
         # TODO: Add wild card options for commands
-        self.msg_handlers: Dict[str, Callable[..., Message]] = {}
+        self.msg_handlers: Dict[bytes, Callable[..., Message]] = {}
+
+        # Sets up sockets on which to poll over
+        for name, soc_type in socs.items():
+            self.new_socket(name, soc_type)
+
+        # Adds any msg_handlers passed in
+        for cmd, closure in msg_handlers.items():
+            self.add_msg_handler(cmd, closure)
 
     def start(self, display_incoming=False):
         """
-        Begins the eventloop, polls on each registered socket, and passes incoming 
+        Begins the eventloop, polls on each registered socket, and passes incoming
         messages off to a child thread.
         """
         self.add_msg_handler(commands['Exit'], self.stop)

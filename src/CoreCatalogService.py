@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
 
+# %%
 # System modules
-import os
-import time
 import json
 import logging
 from typing import Dict, List, Type, Any
-from concurrent.futures import ThreadPoolExecutor
 
 
 # Third party modules
 import zmq
 
 # Relative imports
-from Node import Node
 from Message import Message
 from Beacon import Beacon
 from Timer import Heartbeater
@@ -22,8 +19,10 @@ from Reactor import Reactor
 from zhelpers import zpipe
 from DBP import commands
 
+# %%
 
-class Broker(Node):
+
+class CoreCatalogService():
     """
     A LIAMb pseudo-distributed broker protocol implementation instance. Contains a public interface,
     distributive node monitor, beacon, log aggregator, network proxy, and last cache value.
@@ -58,32 +57,27 @@ class Broker(Node):
         Terminate the eventloop and closes the context.
     """
 
-    def __init__(self, name="Amon_Din", log_level=logging.WARNING, liveliness=1000):
-        super().__init__(name, log_level)
-        self.continue_loop = True
+    def __init__(self, name="CoreCatalogService", log_level=logging.WARNING, liveliness=1000):
 
-        # Pipes
-        pipe_beacon, pb = zpipe(self.ctx)
-        pipe_reactor, pr = zpipe(self.ctx)
-        pipe_heart, ph = zpipe(self.ctx)
+        self.name = name
 
-        self.new_pipe(pipe_beacon, name='pipe_beacon')
-        self.new_pipe(pipe_heart, name='pipe_heart')
+        # TODO: Pull socket and handler information from a config file
+        sockets = {
+            'interface': zmq.ROUTER
+        }
 
-        # Internal Services
-        self.beacon = Beacon()
-        self.interface = Reactor(name=f'{name}_interface', pipe=pr)
-        # self.heart = Heartbeater(liveliness, pipe=ph)
+        handlers = {
+            commands['Info_Req']: self.client_handler,
+            commands['Registration']: self.service_registration,
+            commands['Update']: self.service_update
+        }
 
-        # with ThreadPoolExecutor(100) as executor:
-        #     executor.submit()
-
-        # Interface messages
-        self.add_msg_handler(commands['Info_Req'], self.client_handler)
-        self.add_msg_handler(
-            commands['Registration'], self.service_registration)
-        self.add_msg_handler(commands['Update'], self.service_update)
-        self.add_msg_handler(commands['Heartbeat'], self.heartbeats)
+        self.interface = Reactor(
+            name=f'{self.name}_interface',
+            socs=sockets,
+            msg_handlers=handlers,
+            log_level=log_level
+        )
 
         # External service registration storage
         self.services = dict()
@@ -101,7 +95,7 @@ class Broker(Node):
         if body != '':
             if body in self.services:
                 msg.send(command=commands['Info_Rep'],
-                         body=self.services[body])
+                         body={body: self.services[body]})
             else:
                 msg.send(
                     command=commands['Info_Rep'],
@@ -131,10 +125,10 @@ class Broker(Node):
             del info["name"]
 
             self.services[name] = info
-            self.logger.info(
-                f"New Service Registered: {name}")
-            self.logger.debug(
-                f"Service Registration Information\n:\t{self.services[name]}")
+            # self.logger.info(
+            #     f"New Service Registered: {name}")
+            # self.logger.debug(
+            #     f"Service Registration Information\n:\t{self.services[name]}")
 
             msg.send(command=commands['Approved'])
 
@@ -158,23 +152,18 @@ class Broker(Node):
         for k, v in info.items():
             self.services[name][k] = v
 
-        self.logger.info(f"Service Configs Update: {info}")
+        # self.logger.info(f"Service Configs Update: {info}")
         msg.send(command=commands['Acknowledged'])
 
-    def heartbeats(self, msg):
-        """
-        Handles heartbeat messages that come in from services. Times are update and reties are reset
+    def start(self):
+        self.interface.start(display_incoming=True)
 
-        Parameters
-        ----------
-        msg : BrokerMessage
-            The passed along message received from the interface socket
-        """
-        pass
+    def stop(self):
+        self.interface.stop()
 
 
-if __name__ == "__main__":
-    print("Shalom, World!")
+# %%
+print("Shalom, World!")
 
-    test = Broker(log_level=logging.DEBUG)
-    test.start()
+test = CoreCatalogService(log_level=logging.DEBUG)
+test.start()
