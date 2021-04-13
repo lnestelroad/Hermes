@@ -17,6 +17,7 @@ from Timer import Heartbeater
 
 class Beacon():
     """
+    NOTE: DEPRECATED
     Sets up vanilla python UDP python sockets to send and receive discovery messages
 
     Attributes

@@ -119,7 +119,7 @@ class Message():
         if display:
             self.display_envelope(raw=True, message=self.outgoing)
 
-        self.logger.info("Putting message on outgoing queue.")
+        self.logger.debug("Putting message on outgoing queue.")
         self.socket.send_multipart(self.outgoing)
 
     def add_frame(self, body):

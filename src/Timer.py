@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 
 import time
-from typing import Dict, KeysView, List
-from abc import ABC, abstractmethod
+from typing import Dict, List
 
 # NOTE: These objects are examples of handeling events without including zeromq sockets as opposed to how the Message class does things.
 
 # https://stackoverflow.com/questions/52722864/python-periodic-timer-interrupt
 # https://github.com/sankalpjonn/timeloop/tree/d3e58dbe3b362d4f08077f570a8cda870875de65
-import sys
-import signal
 from threading import Timer
-from datetime import timedelta
 
 
 class ProgramKilled(Exception):
@@ -20,6 +16,8 @@ class ProgramKilled(Exception):
 
 def signal_handler(signum, frame):
     raise ProgramKilled
+
+# https://stackoverflow.com/a/38317060
 
 
 class PeriodicEvent():
