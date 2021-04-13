@@ -4,7 +4,9 @@
 # System modules
 import json
 import logging
+import socket
 from typing import Dict, List, Type, Any
+from datetime import timedelta
 
 
 # Third party modules
@@ -61,7 +63,17 @@ class CoreCatalogService():
 
         self.name = name
 
-        # TODO: Pull socket and handler information from a config file
+        #################################### Beacon Port #####################################
+        # Create UDP sockets
+        self.sender = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+
+        # Ask operating system to let us do broadcasts from socket and resuse ports
+        self.sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        ######################################################################################
+
+        # TODO: Pull socket, handler, and timer information from a config file
         sockets = {
             'router': zmq.ROUTER
         }
@@ -72,19 +84,36 @@ class CoreCatalogService():
             commands['Update']: self.service_update
         }
 
+        timers = {
+            'heartbeats': {
+                'interval': 1,
+                'callback': self.broadcast,
+                'args': [],
+                'kwargs': {'port': 5555, 'broadcast_addr': '255.255.255.255'}
+            },
+            'peer_check': {
+                'interval': .5,
+                'callback': self.robot_rollcall,
+                'args': [],
+                'kwargs': {}
+            }
+        }
+
         self.interface = Reactor(
             name=f'{self.name}_interface',
             socs=sockets,
             msg_handlers=handlers,
-            log_level=log_level
+            log_level=log_level,
+            timers=timers
         )
 
         # External service registration storage
+        # TODO: Move this data structure to some external, persistant, database/cache/file
         self.services = dict()
 
     def client_handler(self, msg: Message):
         """
-        Handles request messages that come in from clients. 
+        Handles request messages that come in from clients.
 
         Parameters
         ----------
@@ -106,7 +135,7 @@ class CoreCatalogService():
 
     def service_registration(self, msg: Message):
         """
-        Handles registration messages that come in from services. 
+        Handles registration messages that come in from services.
 
         Parameters
         ----------
@@ -154,6 +183,15 @@ class CoreCatalogService():
 
         # self.logger.info(f"Service Configs Update: {info}")
         msg.send(command=commands['Acknowledged'])
+
+    def broadcast(self, port=5245, broadcast_addr=None):
+
+        msg = b'GONDOR_CALLS_FOR_AID'
+        # TODO: Send with multicast...not broadcast.
+        self.sender.sendto(msg, (broadcast_addr, port))
+
+    def robot_rollcall(self, *args, **kwargs):
+        pass
 
     def start(self):
         self.interface.start(display_incoming=True)
