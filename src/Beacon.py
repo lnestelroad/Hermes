@@ -39,7 +39,7 @@ class Beacon():
 
     def __init__(self, port=5246, address=None, broadcast_addr='255.255.255.255'):
         if address is None:
-            # TODO: Make finding the actuall IP address more robust than guessing where it is.
+            # TODO: Make finding the actual IP address more robust than guessing where it is.
             local_addrs = ni.ifaddresses(ni.interfaces()[2])[2][0]['addr']
 
         # self.heartbeater = heartbeater
