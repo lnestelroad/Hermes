@@ -2,16 +2,16 @@
 
 # System modules
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 from abc import ABC
 from uuid import uuid4
+import socket
 
 # Third party modules
 import zmq
 
 # Relative imports
 from Logger import Logger
-from zhelpers import zpipe
 
 
 class Node(ABC):
@@ -118,6 +118,23 @@ class Node(ABC):
                     self.update = True
 
         self.poller.register(self.sockets[name], flags=zmq.POLLIN)
+
+    def discover(self, port: int = 5245) -> List[bytes]:
+        recver = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        recver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        recver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
+        # Bind UDP socket to local port so we can receive pings
+        recver.bind(('', port))
+
+        header, (ip, _) = recver.recvfrom(1024)
+        recver.close()
+
+        # Pulls the CCS's interface port from the UPD message header
+        port = header.decode('utf-8').split(' ')[1]
+
+        return (header, ip, port)
 
     def close_socket(self, name: str):
         """

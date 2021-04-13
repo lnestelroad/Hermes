@@ -52,7 +52,8 @@ class Service(Node):
             A flag to determine if a reconnect is being attempted or if its the initial connect
         """
         # open a socket to the CCS
-        self.new_socket("service->bus", zmq.REQ)
+        _, ip, port = self.discover()
+        self.new_socket("service->bus", zmq.REQ, addr=f'tcp://{ip}:{port}')
 
         # TODO: Figure out how to do retries with reconnect flag
         # while self.retries != 0:
@@ -83,7 +84,7 @@ class Service(Node):
 
         msg = Message(socket=self.sockets["service->bus"])
         msg.send(command=commands['Registration'], body=info)
-        msg.recv()
+        msg.recv(display=True)
 
         if msg.command == commands["Approved"]:
             self.continue_loop = True
@@ -138,7 +139,7 @@ class Service(Node):
 if __name__ == "__main__":
     print("Shalom, World!")
 
-    test = Service()
+    test = Service(log_level=logging.INFO)
     test.start(display_incoming=True)
 
 # %%
