@@ -34,22 +34,24 @@ class Reactor(Node):
         self.timers: Dict[str, int] = {}
 
         # Sets up sockets on which to poll over
-        for soc_name, soc_type in socs.items():
-            self.new_socket(soc_name, soc_type)
+        if socs is not None:
+            for soc_name, soc_type in socs.items():
+                self.new_socket(soc_name, soc_type)
 
         # Adds any msg_handlers passed in
-        for cmd, closure in msg_handlers.items():
-            self.add_msg_handler(cmd, closure)
+        if msg_handlers is not None:
+            for cmd, closure in msg_handlers.items():
+                self.add_msg_handler(cmd, closure)
 
         # Initiates timer objects for periodic callbacks
-        # TODO: Pass these in using a better method
-        for timer_name, timer_obj in timers.items():
-            self.add_timer(
-                timer_name,
-                timer_obj['interval'],
-                timer_obj['callback'],
-                *timer_obj['args'],
-                **timer_obj['kwargs'])
+        if timers is not None:
+            for timer_name, timer_obj in timers.items():
+                self.add_timer(
+                    timer_name,
+                    timer_obj['interval'],
+                    timer_obj['callback'],
+                    *timer_obj['args'],
+                    **timer_obj['kwargs'])
 
     def start(self, display_incoming=False):
         """
