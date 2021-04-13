@@ -2,7 +2,7 @@
 
 # System modules
 import logging
-import typing
+from typing import Dict, Any
 from abc import ABC
 from uuid import uuid4
 
@@ -47,7 +47,10 @@ class Node(ABC):
 
         self.ctx = zmq.Context()
         self.poller = zmq.Poller()
-        self.sockets = dict()
+        # to hold all created sockets with associated names
+        self.sockets: Dict[str, zmq.Socket] = dict()
+        # to hold socket information on poll-in type sockets
+        self.interfaces: Dict[str, Any] = dict()
 
         # Initialize logging component
         self.logger = Logger(name, log_level).logger
@@ -61,7 +64,7 @@ class Node(ABC):
         ----------
         name : str
             A name to give the new socket
-        type : zmq.Socket, default=zmq.PAIR
+        type : zmq.Socket
             A zmq socket type for the new socket
         soc_options : dict()
             passes along all of the wanted socket options including... TODO: ADD SOCKET OPTIONS
@@ -70,6 +73,7 @@ class Node(ABC):
             connect to tcp://localhost:5246 if nothing else is provided.
         """
         # TODO: ITERATE THROUGH SOCKET OPTIONS PARAMETER
+        # TODO: Recreate socket if passed in name already exists
 
         self.sockets[name] = self.ctx.socket(type)
 
@@ -93,16 +97,23 @@ class Node(ABC):
                     self.logger.info(
                         f"Opened New Socket: '{name}' on Port {self.port}")
 
+                    # Adds the new poll-in type socket to the interface dict so
+                    # port, ip, hwm, and timeout values can be passed to CCS
+                    self.interfaces[name] = {'ip': self.ip, 'port': self.port}
+
                     # If the port binding failed, then don't update the port value as it was already
-                    # done in the except. This simply stops double increments
+                    # done in the except statement. This simply stops double increments
                     if not self.update:
                         self.port += 1
+                        self.update = False
+
                     break
 
                 except zmq.ZMQError as e:
+                    # TODO: Add method to check to see if the desired port is already used rather than while loop
                     self.port += 1
                     self.logger.warning(
-                        f"Port Conflict. Attemping to Bind With New Port: {self.port}")
+                        f"Port conflict on {self.port-1}. Attemping to Bind With New Port: {self.port}")
                     self.logger.debug(f"Error Code: {e}")
                     self.update = True
 
@@ -119,6 +130,10 @@ class Node(ABC):
         """
         self.sockets[name].close()
         del self.sockets[name]
+
+        # Delete if the socket was an interface
+        if name in self.interfaces.keys():
+            del self.interfaces[name]
 
         self.logger.info(f"Removed Socket: {name}")
 
