@@ -3,6 +3,7 @@
 # System modules
 import logging
 import typing
+from abc import ABC
 from uuid import uuid4
 
 # Third party modules
@@ -13,9 +14,9 @@ from Logger import Logger
 from zhelpers import zpipe
 
 
-class Node():
+class Node(ABC):
     """
-    Base class to set up a basic zmq instance (also referred to as a node) for later inheritance.
+    Base class to set up a basic zmq instance or later inheritance.
 
     Attributes
     ----------
@@ -105,19 +106,6 @@ class Node():
                     self.logger.debug(f"Error Code: {e}")
                     self.update = True
 
-        self.poller.register(self.sockets[name], flags=zmq.POLLIN)
-
-    def new_pipe(self, pipe: zmq.Socket, name='pipe'):
-        """
-        Registers a new pipe socket with the node.
-
-        Parameters
-        ----------
-        pipe: zmq.Socket
-            A PAIR sockets to be passed in from a parent thread.
-        """
-
-        self.sockets[name] = pipe
         self.poller.register(self.sockets[name], flags=zmq.POLLIN)
 
     def close_socket(self, name: str):
