@@ -90,8 +90,7 @@ class Reactor(Node):
 
         if command not in self.msg_handlers.keys():
             self.msg_handlers[command] = closure
-            self.logger.info(
-                f"Registered new handler: {command_checks[command]}.")
+            self.logger.info(f"Registered new handler: {command}.")
         else:
             print("Command already exists.")
 

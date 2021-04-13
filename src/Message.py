@@ -131,6 +131,8 @@ class Message():
         body : Any
             This is the message to append to the outgoing message attribute.
         """
+        # TODO: Allow for positional placement parameters
+        # TODO: Implement with msgpack.
 
         if type(body) == bytes:
             self.outgoing.append(body)

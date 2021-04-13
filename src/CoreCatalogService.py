@@ -63,7 +63,7 @@ class CoreCatalogService():
 
         # TODO: Pull socket and handler information from a config file
         sockets = {
-            'interface': zmq.ROUTER
+            'router': zmq.ROUTER
         }
 
         handlers = {

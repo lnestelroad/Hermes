@@ -12,7 +12,9 @@ commands = {
     'Heartbeat': b'<3',
     'Disconnect': b'</3',
     'Exit': b'<\\3',
-    'Handler': b'^o^'
+    'Handler': b'^o^',
+    'Pong': b'pong',
+    'Ping': b'ping'
 }
 
 command_checks = {
