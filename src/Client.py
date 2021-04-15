@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 
+
 # System modules
-import os
-import time
 import logging
-from typing import get_args
+from typing import Dict, List, Any
+from pprint import pprint
+import json
 
 # Third party modules
 import zmq
+from zmq.sugar.context import T
 
 # Relative imports
 from Node import Node
 from Message import Message
-from Beacon import Beacon
 from DBP import commands
 
 
@@ -21,26 +22,48 @@ class Client(Node):
     A LIAMb node extension to provide a client interface with the bus.
     """
 
-    def __init__(self, name="Gondor"):
-        super().__init__(name=name, log_level=logging.DEBUG)
+    def __init__(self, name="Gondor", log_level=logging.WARNING):
+        super().__init__(name=name, log_level=log_level)
+
+        # A flag variable to determine if the client has made a connection with the broker
+        self.connected = False
 
         # open a socket to the broker
-        self.new_socket("client->bus", zmq.REQ)
+        self.logger.info("Attempting to connect to the bus...")
+        rc = self.discover()
 
-    def get_services(self, name=None):
+        if rc is not None:
+            header, ip, port = rc
+            self.new_socket('client->bus', zmq.REQ, addr=f'tcp://{ip}:{port}')
+            self.connected = True
+
+    def get_services(self, name='') -> Dict[str, Dict[str, Any]]:
         """
         Get a list or entry of registered service(s) information.
 
         Parameter
         ---------
         name : str, default=None
-            A name of a desired service to get information about. If left blank then all services 
+            A name of a desired service to get information about. If left blank then all services
             will be returned
         """
-        msg = Message(socket=self.sockets["client->bus"])
-        msg.send(name)
-        msg.recv()
-        msg.display_envelope()
+        if self.connected:
+            msg = Message(socket=self.sockets["client->bus"])
+            msg.send(command=commands['Info_Req'], body=name)
+            msg.recv()
+
+            info = json.loads(msg.body[0].decode('utf-8'))
+
+            if 'Error' in info.keys():
+                return None
+
+            if name == '':
+                return info
+            else:
+                return info[name]
+
+        else:
+            self.logger.warning("No established connection with CCS.")
 
     def connect_to_service(self, addr):
         """
@@ -52,38 +75,41 @@ class Client(Node):
         addr: str
             An address to connect the client to.
         """
+        # TODO: Give this socket a unique name for each service.
         self.new_socket("client->service", zmq.REQ, addr)
 
-    def start(self):
-        """
-        An event loop for user interaction with the client API.
-        """
-        # self.get_services()
-        addr = input("Specify connection port:  ")
-        self.connect_to_service(f'tcp://localhost:{addr}')
-        msg = input("What would you like to say: ")
+    def request_from_service(self, name=None, addr=None) -> Dict[str, Any]:
+        if name is None and addr is None:
+            raise ValueError(
+                "Either the name or addr parameter must have a value")
 
-        message = Message(
-            command=commands['Info_Req'],
-            socket=self.sockets["client->service"],
-            logger=self.logger)
-        message.send(body=msg)
+        if name is not None:
 
-        print("Response from service:")
-        message.recv(display=True)
+            # TODO: Move null service check to somewhere else
+            info = self.get_services(name=name)['interfaces']['router']
+
+            if info is not None:
+                self.connect_to_service(
+                    addr=f"tcp://{info['ip']}:{info['port']}")
+            else:
+                self.logger.warning("Service does not exits.")
+                return None
+
+        if addr is not None:
+            self.connect_to_service(addr=addr)
+
+        msg = Message(self.sockets['client->service'])
+        msg.send(command=commands['Ping'], body="Hello!")
+        msg.recv()
+
+        return msg.body
+
+    def sub_to_service(self, name, topic):
+        pass
 
 
 if __name__ == "__main__":
     print("Shalom, World!")
 
-    ctx = zmq.Context()
-    addr = input("Specify connection port:  ")
-    req = ctx.socket(zmq.REQ)
-    req.connect(f'tcp://localhost:{addr}')
-    msg = input("What would you like to say: ")
-
-    message = Message(socket=req)
-    message.send(command='u_U', body=msg, display=True)
-
-    print("Response from service:")
-    message.recv(display=True)
+    cli = Client(log_level=logging.DEBUG)
+    pprint(cli.get_services())
