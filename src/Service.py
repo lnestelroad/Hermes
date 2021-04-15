@@ -141,7 +141,3 @@ if __name__ == "__main__":
 
     test = Service(log_level=logging.INFO)
     test.start(display_incoming=True)
-
-# %%
-
-# %%

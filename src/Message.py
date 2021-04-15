@@ -112,7 +112,7 @@ class Message():
         self.add_frame(time.time())
 
         if invalid:
-            self.add_frame("Error: Invalid Message Envelop.")
+            self.add_frame("Error: Invalid Message Envelope.")
         else:
             self.add_frame(body)
 
@@ -133,6 +133,7 @@ class Message():
         """
         # TODO: Allow for positional placement parameters
         # TODO: Implement with msgpack.
+        # TODO: Standardize body as json
 
         if type(body) == bytes:
             self.outgoing.append(body)

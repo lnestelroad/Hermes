@@ -125,7 +125,7 @@ class CoreCatalogService():
             else:
                 msg.send(
                     command=commands['Info_Rep'],
-                    body=f"No Registered Service With the Name {body}")
+                    body={'Error': f"No Registered Service With the Name {body}"})
         else:
             msg.send(command=commands['Info_Rep'],
                      body=self.services)
@@ -199,7 +199,8 @@ class CoreCatalogService():
 
 
 # %%
-print("Shalom, World!")
+if __name__ == "__main__":
+    print("Shalom, World!")
 
-test = CoreCatalogService(log_level=logging.INFO)
-test.start()
+    test = CoreCatalogService(log_level=logging.DEBUG)
+    test.start()
