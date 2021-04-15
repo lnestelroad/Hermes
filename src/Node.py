@@ -41,6 +41,8 @@ class Node(ABC):
     def __init__(self, name=uuid4().hex, ip="127.0.0.1", port=5246, log_level=logging.WARNING):
         self.name = name
         self.port = port
+
+        # TODO: Find a way to get the actual IP address
         self.ip = ip
         self.addr = f"tcp://{ip}:{port}"
         self.update = False
@@ -119,22 +121,30 @@ class Node(ABC):
 
         self.poller.register(self.sockets[name], flags=zmq.POLLIN)
 
-    def discover(self, port: int = 5245) -> List[bytes]:
+    def discover(self, port: int = 5245, timeout=10) -> List[bytes]:
         recver = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         recver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         recver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        recver.settimeout(timeout)
 
         # Bind UDP socket to local port so we can receive pings
         recver.bind(('', port))
 
-        header, (ip, _) = recver.recvfrom(1024)
-        recver.close()
+        try:
+            header, (ip, _) = recver.recvfrom(1024)
+            # Pulls the CCS's interface port from the UPD message header
+            port = header.decode('utf-8').split(' ')[1]
+            recver.close()
 
-        # Pulls the CCS's interface port from the UPD message header
-        port = header.decode('utf-8').split(' ')[1]
+            return (header, ip, port)
 
-        return (header, ip, port)
+        except socket.timeout:
+            self.logger.critical(
+                f"Cannot find Core Catalog Service beacon on port {port}. Shutting down.")
+            recver.close()
+
+        return None
 
     def close_socket(self, name: str):
         """
