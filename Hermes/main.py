@@ -13,8 +13,8 @@ import zmq
 
 
 # Relative imports
-from Client import Client
-from Service import Service
+from Hermes.Client import Client
+from Hermes.Service import Service
 # from src.Beacon import Beacon
 # from src.LastCachedValue import
 

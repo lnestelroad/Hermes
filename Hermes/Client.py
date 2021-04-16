@@ -12,9 +12,9 @@ import zmq
 from zmq.sugar.context import T
 
 # Relative imports
-from Node import Node
-from Message import Message
-from DBP import commands
+from Hermes.Node import Node
+from Hermes.Message import Message
+from Hermes.DBP import commands
 
 
 class Client(Node):

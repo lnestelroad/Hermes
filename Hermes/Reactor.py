@@ -11,10 +11,10 @@ import signal
 import zmq
 
 # Relative imports
-from Node import Node
-from Message import Message
-from DBP import commands, command_checks
-from Timer import ProgramKilled, PeriodicEvent, signal_handler
+from Hermes.Node import Node
+from Hermes.Message import Message
+from Hermes.DBP import commands, command_checks
+from Hermes.Timer import ProgramKilled, PeriodicEvent, signal_handler
 
 
 class Reactor(Node):

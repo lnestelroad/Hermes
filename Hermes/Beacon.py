@@ -5,7 +5,7 @@ import socket
 # Third party modules
 import netifaces as ni
 
-from Timer import Heartbeater
+from Hermes.Timer import Heartbeater
 
 ################################################# RESOURCES ##########################################################
 # Basic UDP broadcast: https://gist.github.com/ninedraft/7c47282f8b53ac015c1e326fffb664b5

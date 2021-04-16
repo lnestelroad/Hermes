@@ -1,4 +1,7 @@
+msgpack==1.0.2
+netifaces==0.10.9
+pyaml==20.4.0
+pyuv==1.4.0
+PyYAML==5.4.1
 pyzmq==22.0.2
-matplotlib==3.3.3
-ipykernel==5.4.3
-tqdm==4.56.0
+toml==0.10.2

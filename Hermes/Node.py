@@ -11,7 +11,7 @@ import socket
 import zmq
 
 # Relative imports
-from Logger import Logger
+from Hermes.Logger import Logger
 
 
 class Node(ABC):

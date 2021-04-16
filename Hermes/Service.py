@@ -10,12 +10,12 @@ from typing import Dict, List, Any, Callable
 import zmq
 
 # Relative imports
-from Node import Node
-from Message import Message
-from Timer import Heartbeater, Peer
-from Beacon import Beacon
-from Reactor import Reactor
-from DBP import commands, command_checks
+from Hermes.Node import Node
+from Hermes.Message import Message
+from Hermes.Timer import Heartbeater, Peer
+from Hermes.Beacon import Beacon
+from Hermes.Reactor import Reactor
+from Hermes.DBP import commands, command_checks
 
 # %%
 

@@ -11,11 +11,11 @@ from typing import Dict, List, Type, Any
 import zmq
 
 # Relative imports
-from Message import Message
-from Timer import Heartbeater
-from Reactor import Reactor
-from DBP import commands
-from Logger import Logger
+from Hermes.Message import Message
+from Hermes.Timer import Heartbeater
+from Hermes.Reactor import Reactor
+from Hermes.DBP import commands
+from Hermes.Logger import Logger
 
 # %%
 

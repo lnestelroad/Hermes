@@ -9,8 +9,8 @@ from typing import Dict, List, Any
 
 # Third party modules
 import zmq
-from DBP import command_checks, commands
-from zhelpers import dump
+from Hermes.DBP import command_checks, commands
+from Hermes.zhelpers import dump
 
 # NOTE: This is an example of including zeromq sockets within the wrapper as opposed to how Heartbeats deal with events.
 # Refer to the Clone patter KVMsg for reference
