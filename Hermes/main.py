@@ -1,49 +1,35 @@
 #!/usr/bin/env python3
 
 # System modules
+import argparse
 import os
-import math
-import time
-import logging
-import threading
-import concurrent.futures
 
 # Third party modules
 import zmq
-
+from zmq.sugar.context import T
 
 # Relative imports
-from Hermes.Client import Client
+from Hermes.Message import Message
+from Hermes.Timer import Heartbeater, Peer
+from Hermes.Beacon import Beacon
+from Hermes.Reactor import Reactor
 from Hermes.Service import Service
-# from src.Beacon import Beacon
-# from src.LastCachedValue import
-
-
-# def start_broker(addr="127.0.0.1:5246"):
-# beacon_of_gondor  = Broker(addr)
-
-
-def start_client(name):
-    theoden = Service(name)
-
-
-def start_service(name):
-    denethor_II = Client(name)
+from Hermes.Client import Client
+from Hermes.DBP import commands, command_checks
 
 
 def main():
+    parser = argparse.ArgumentParser(prog='hermes',
+                                     description='Hermes cli for interactive bus connections.')
+    parser.add_argument(
+        'broker', help='A bool flag to signify if instance should be a broker',
+        type=bool, default=False)
+    parser.add_argument(
+        '--config_file',
+        help='Filepath for a custom configuration file',
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
-        # executor.submit(start_broker)
-        executor.map(start_client, range(10))
-        executor.map(start_service, range(2))
+    )
+    args = parser.parse_args()
 
-
-if __name__ == "__main__":
-
-    format = "%(asctime)s| %(message)s"
-    logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
-    logging.info("[Main] Basic logger configured")
-    print(f"PyZMQ version: {zmq.__version__}")
-
-    main()
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print(args)

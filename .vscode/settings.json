@@ -24,5 +24,24 @@
     },
     "editor.rulers": [
         120
-    ]
+    ],
+    "jenkins-runner.hostConfigs": {
+        "localhost": {
+            "url": "http://localhost:8001",
+            "user": "lnestelroad",
+            "password": "9lXlj5BxsyHq"
+        }
+    },
+    "jenkins-runner.jobs": {
+        "liam_pipeline": {
+            "isDefault": true,
+            "runWith": "localhost",
+            "name": "Hermes",
+            "parameter": "",
+            "environment": {
+                "RUN_TEST": true
+            }
+        }
+    },
+
 }
