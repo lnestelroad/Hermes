@@ -9,30 +9,30 @@ pipeline {
             steps {
                 checkout changelog: false, poll: false,
                 scm: [
-                $class: 'GitSCM',
-                branches: [[ name: "*/dev" ]],
-                doGenerateSubmoduleConfigurations: false,
-                extensions: [
-                    // Deletes work space and brings in new copy
-                    [ $class: 'CleanBeforeCheckout', ],
+                    $class: 'GitSCM',
+                    branches: [[ name: "*/dev" ]],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [
+                        // Deletes work space and brings in new copy
+                        [ $class: 'CleanBeforeCheckout', ],
 
-                    // checks code into specified dir in workspace
-                    // [ $class: 'RelativeTargetDirectory', relativeTargetDir: "liamb" ],
+                        // checks code into specified dir in workspace
+                        // [ $class: 'RelativeTargetDirectory', relativeTargetDir: "liamb" ],
 
-                    // Name of the git repo
-                    [ $class: 'ScmName', name: "Hermes" ],
+                        // Name of the git repo
+                        [ $class: 'ScmName', name: "Hermes" ],
 
-                    // Shallow clone
-                    [ $class: 'CloneOption', depth: 1, noTags: true, reference: 'hermes', shallow: true ]
+                        // Shallow clone
+                        [ $class: 'CloneOption', depth: 1, noTags: true, reference: 'hermes', shallow: true ]
 
-                    // Specified dirs in repo to pull
-                    // [ $class: 'SparseCheckoutPaths', sparseCheckoutPaths: git_checkout.checkout_paths ]
-                ],
-                submoduleCfg: [],
+                        // Specified dirs in repo to pull
+                        // [ $class: 'SparseCheckoutPaths', sparseCheckoutPaths: git_checkout.checkout_paths ]
+                    ],
+                    submoduleCfg: [],
 
-                // name of the credentials in jenkins and the git repo url.
-                userRemoteConfigs: [[ credentialsId: "148cb80f-a093-473a-8564-964464898e23", url: "https://github.com/lnestelroad/Hermes.git" ]]
-                ]
+                    // name of the credentials in jenkins and the git repo url.
+                    userRemoteConfigs: [[ credentialsId: "148cb80f-a093-473a-8564-964464898e23", url: "https://github.com/lnestelroad/Hermes.git" ]]
+                    ]
             }
         }  
         stage("Get dependencies with pip"){
@@ -68,8 +68,23 @@ pipeline {
         always {
             // Archive the CTest xml output
             archiveArtifacts (
-                artifacts: '**/*.xml',
+                artifacts: '*.xml',
                 fingerprint: true
+            )
+
+            // Process the CTest xml output with the xUnit plugin
+            xunit (
+                testTimeMargin: '3000',
+                thresholdMode: 1,
+                // thresholds: [
+                //     failed(failureThreshold: '0')
+                // ],
+                tools: [
+                    JUnit(
+                        excludesPattern: '', 
+                        pattern: '*.xml', 
+                        stopProcessingIfError: true)
+                ]
             )
         }
     }

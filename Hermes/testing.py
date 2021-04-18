@@ -26,8 +26,9 @@ from Hermes.DBP import commands, command_checks
 
 # %%
 ###################### Client Test ###############################
-cli = Client()
-cli.request_from_service(name='Rohan')
+if __name__ == '__main__':
+    cli = Client()
+    cli.request_from_service(name='Rohan')
 ##################################################################
 
 # %%
