@@ -1,6 +1,11 @@
-src/__pycache__/
-src/logs/*
+Hermes/__pycache__
+Hermes/data/logs/*
 .ipynb_checkpoints/
 .vscode/.env
 zeromq
-src/testing.py
+Hermes/testing.py
+Hermes_lnestelroad.egg-info
+nose2-junit.xml
+build
+dist
+tests/__pycache__
