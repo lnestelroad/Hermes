@@ -55,7 +55,9 @@ pipeline {
 
         stage('Distribute to PyPI') {
             steps {
-                sh 'twine upload --repository testpypi -u __token__ -p pypi-AgENdGVzdC5weXBpLm9yZwIkMWU0ZTI1MWItZTgyYS00ZjVlLWI2NWItY2EzZGY2ZmUxMDYzAAJDeyJwZXJtaXNzaW9ucyI6IHsicHJvamVjdHMiOiBbImhlcm1lcy1sbmVzdGVscm9hZCJdfSwgInZlcnNpb24iOiAxfQAABiC9noYdEqb3Nen7HCpTpYOplDxDZkY7Jl1skfhyEO_s9w --skip-existing dist/*'
+                withCredentials([string(credentialsId: 'twine', variable: 'TPASS')]) {
+                    sh 'twine upload --repository testpypi -u __token__ -p ${TPASS} --skip-existing dist/*'
+                }
             }
         }
 
