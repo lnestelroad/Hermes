@@ -1,4 +1,3 @@
-Hermes/__pycache__
 Hermes/data/logs/*
 .ipynb_checkpoints/
 .vscode/.env
@@ -8,4 +7,4 @@ Hermes_lnestelroad.egg-info
 nose2-junit.xml
 build
 dist
-tests/__pycache__
+__pycache__/
