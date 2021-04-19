@@ -43,7 +43,7 @@ pipeline {
 
         stage('Run unittests') {
             steps {
-                sh 'nose2 --plugin nose2.plugins.junitxml --junit-xml Hermes/tests'
+                sh 'nose2 --plugin nose2.plugins.junitxml --junit-xml'
             }
         }
         
