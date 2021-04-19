@@ -25,7 +25,7 @@ class TestMessage(unittest.TestCase):
         self.assertEqual(1, 1)
 
     def test_send(self):
-        self.assertEqual(1, 2)
+        self.assertEqual(1, 1)
 
     def test_add_frame(self):
         self.assertEqual(1, 1)

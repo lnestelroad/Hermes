@@ -41,25 +41,23 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Run unittests') {
             steps {
                 sh 'nose2 --plugin nose2.plugins.junitxml --junit-xml tests'
             }
         }
         
-        stage('Package') {
+        stage('Package into Wheel files') {
             steps {
                 sh 'python3 setup.py sdist && python3 setup.py bdist_wheel'
             }
         }
 
-    //     stage('Build') {
-    //         steps {
-    //             dir('build') {
-    //                 sh 'cmake --build .'
-    //             }
-    //         }
-    //     }
+        stage('Distribute to PyPI') {
+            steps {
+                sh 'twine upload --repository testpypi -u __token__ -p pypi-AgENdGVzdC5weXBpLm9yZwIkMWU0ZTI1MWItZTgyYS00ZjVlLWI2NWItY2EzZGY2ZmUxMDYzAAJDeyJwZXJtaXNzaW9ucyI6IHsicHJvamVjdHMiOiBbImhlcm1lcy1sbmVzdGVscm9hZCJdfSwgInZlcnNpb24iOiAxfQAABiC9noYdEqb3Nen7HCpTpYOplDxDZkY7Jl1skfhyEO_s9w --skip-existing dist/*'
+            }
+        }
 
 
     }
