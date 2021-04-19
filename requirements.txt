@@ -5,6 +5,7 @@ pyuv==1.4.0
 PyYAML==5.4.1
 pyzmq==22.0.2
 toml==0.10.2
-setuptools==44.0.0
-wheel==0.36.2
-nose2==0.10.0
+setuptools
+wheel
+nose2
+twine
